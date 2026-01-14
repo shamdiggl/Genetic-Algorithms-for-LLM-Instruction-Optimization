@@ -24,37 +24,72 @@ The core logic utilizes the **DEAP** library for evolutionary computation and **
 
 ## 📊 Results & Analysis
 
-We evaluated the evolutionary framework across multiple dimensions, including strict formatting constraints, token budgets, and cross-domain generalization.
+The efficacy of the evolutionary prompt optimization was evaluated across five distinct dimensions: reasoning under standard conditions, performance under strict token constraints, robustness to structured formatting (JSON), and generalization across both different models and different datasets.
 
-### 1. Optimization under Constraints (JSON & Token Budget)
-A major challenge for LLMs is maintaining reasoning quality while adhering to strict output formats (e.g., JSON) or low token budgets (e.g., 512 tokens). We compared the GA-Optimized prompts against Direct Prompting, Zero-Shot CoT, and a manual "Concise CoT" baseline.
+### 1. Standard Benchmark (Natural Language, 2048 Tokens)
+*File: `results/natural_2048.png`*
 
-![JSON 512 Results](results/json-512.png)
-*Table 1: Performance with strict JSON output enforcement and a 512-token limit.*
+This benchmark represents the "optimal" performance scenario, allowing models a high token budget for reasoning and natural language expression. We compared the **GA-Optimized** prompt against standard **Direct Prompting** and **Zero-Shot Chain-of-Thought (CoT)**.
 
-**Key Findings:**
-*   **Superior Constraint Adherence:** The GA evolved prompts that successfully forced models to output valid JSON while performing complex reasoning, significantly outperforming standard Zero-Shot CoT, which often breaks formatting rules.
-*   **Efficiency:** Even with a reduced token budget (512 vs. the standard 2048), the GA-optimized prompts maintained high accuracy, making them suitable for production environments where latency and cost are factors.
+![Standard Benchmark](results/natural_2048.png)
 
-### 2. Cross-Dataset Generalization
-To test if the GA simply "overfits" to a specific dataset, we took prompts optimized on **MMLU-Pro** and tested them on **BBH** (and vice versa).
+**Key Observations:**
+* **Superiority of GA:** The GA-Optimized prompt consistently outperformed both Direct and CoT baselines across all models.
+* **Significant Gains:** On the BBH dataset, **Qwen3-8B** improved from **73.61% (Direct)** to **77.88% (GA)**. Similarly, **Llama-3.1** saw a jump from **54.91%** to **61.49%**.
+* **CoT Consistency:** While CoT generally helps, the GA-evolved prompts found even more effective instruction combinations than the standard "Let's think step by step."
 
-![Cross Dataset Results](results/cross-dataset.png)
-*Table 2: Generalization performance. "Difference" indicates the performance drop when applying a prompt optimized on one dataset to a completely different one.*
+---
 
-**Observation:**
-*   The system demonstrates **task-agnostic generalization**. For example, the prompt evolved for Qwen3-8B on MMLU-Pro lost only **0.02%** accuracy when applied to BBH.
-*   This suggests the GA is discovering fundamental reasoning instructions (e.g., "Step-back prompting" combined with "Persona adoption") that apply universally to logic tasks, rather than dataset-specific tricks.
+### 2. Token-Budgeted Performance (Natural Language, 512 Tokens)
+*File: `results/natural-512.png`*
 
-### 3. Cross-Model Transferability
-We analyzed the transferability of optimized prompts across different model architectures. The heatmap below displays the accuracy when a prompt optimized on a *Source Model* (rows) is evaluated on a *Target Model* (columns).
+In many production environments, inference cost and latency are limited by a token budget. We evaluated performance when the model response was capped at 512 tokens.
 
-![Cross Model Heatmap](results/cross-model.png)
-*Figure 2: Transferability Matrix. Green indicates high performance; Orange indicates lower performance.*
+![Token Constrained Results](results/natural-512.png)
 
-**Insights:**
-*   **Strong-to-Weak Transfer:** Prompts optimized on capable models (like **Qwen3-8B**) generalize exceptionally well to smaller or different models (Phi-4-mini, Gemma-3).
-*   **Model-Specific Prompts:** Llama-3.1 generated prompts that were highly effective for itself but transferred poorly to others, indicating it found model-specific "hacks" rather than universal reasoning patterns.
+**Key Observations:**
+* **Efficiency:** Even with a restricted budget, GA-Optimized prompts provided a massive lift over baseline performance.
+* **Qwen Excellence:** On MMLU-Pro, **Qwen3-8B** maintained a commanding lead, jumping from **33.29%** to **54.77%** using optimized instructions.
+
+---
+
+### 3. Structured Output Constraints (JSON, 512 Tokens)
+*File: `results/json-512.png`*
+
+Requiring LLMs to output strictly valid JSON often degrades reasoning performance as the model prioritizes formatting over logic. We tested the GA's ability to evolve prompts that maintain high accuracy while adhering to a strict JSON format within 512 tokens.
+
+![JSON Formatting Results](results/json-512.png)
+
+**Key Observations:**
+* **Balancing Act:** The GA successfully evolved prompts that enforced valid JSON syntax without collapsing the reasoning chain.
+* **Outperforming "Concise CoT":** For **BBH**, the GA-Optimized Qwen3-8B reached **75.48%**, outperforming the specialized "Zero-Shot CoT + Concise" baseline (73.81%).
+
+---
+
+### 4. Cross-Model Transferability
+*File: `results/cross-model.png`*
+
+We analyzed the "universality" of optimized prompts by taking instructions evolved for one model (**Source**) and evaluating them on other models (**Target**).
+
+![Cross-Model Heatmap](results/cross-model.png)
+*(Rows: Source model used for GA optimization | Columns: Target model evaluated)*
+
+**Key Observations:**
+* **Universal Patterns:** Prompts optimized on **Qwen3-8B** (top row) generalized remarkably well to Phi-4 and Gemma-3 (shown in bright green). This suggests Qwen discovers reasoning strategies that are effective for other architectures.
+* **Model Specificity:** Prompts optimized for **Llama-3.1** (bottom row) showed poor transferability to others (orange cells), indicating that the GA over-fitted to Llama's unique response style.
+
+---
+
+### 5. Cross-Dataset Transferability (Generalization)
+*File: `results/cross-dataset.png`*
+
+To ensure the GA was evolving general reasoning strategies rather than just "memorizing" a specific dataset, we tested prompts optimized on MMLU-Pro on the BBH dataset, and vice versa.
+
+![Cross-Dataset Transfer](results/cross-dataset.png)
+
+**Key Observations:**
+* **Robustness:** **Qwen3-8B** demonstrated incredible stability; a prompt optimized for BBH performed almost identically when applied to MMLU-Pro (only a **-0.02%** difference).
+* **Dataset Sensitivity:** **Llama-3.1** showed the highest sensitivity, with a **-9.67%** drop when switching datasets, suggesting its optimized instructions were highly specific to the BBH task format.
 
 ## 💻 Usage
 
@@ -64,6 +99,7 @@ We analyzed the transferability of optimized prompts across different model arch
 
 ```bash
 pip install -r requirements.txt
+```
 
 ## 📂 Repository Structure
 
