@@ -1,0 +1,7 @@
+vllm
+torch
+transformers
+deap
+datasets
+tqdm
+numpy
