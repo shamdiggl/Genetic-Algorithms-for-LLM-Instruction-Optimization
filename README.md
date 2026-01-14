@@ -22,26 +22,39 @@ The core logic utilizes the **DEAP** library for evolutionary computation and **
 *   **Optimization:** The GA (in `src/ga_vllm_opt.py`) evolves the population to maximize accuracy on a training subset of MMLU/BBH.
 *   **Models Evaluated:** Qwen3-8B, Phi-4-mini, Gemma-3, and Llama-3.1.
 
-## 📊 Results
+## 📊 Results & Analysis
 
-### 1. Performance Gains
-The evolutionary approach outperformed baseline direct prompting and standard Zero-Shot Chain-of-Thought (CoT).
+We evaluated the evolutionary framework across multiple dimensions, including strict formatting constraints, token budgets, and cross-domain generalization.
 
-![Benchmark Results](results/benchmark_table.png)
-*Table 1: Comparison of Direct prompting, Zero-Shot CoT, and the GA-Optimized prompt. The GA method achieved the highest accuracy across most models.*
+### 1. Optimization under Constraints (JSON & Token Budget)
+A major challenge for LLMs is maintaining reasoning quality while adhering to strict output formats (e.g., JSON) or low token budgets (e.g., 512 tokens). We compared the GA-Optimized prompts against Direct Prompting, Zero-Shot CoT, and a manual "Concise CoT" baseline.
+
+![JSON 512 Results](results/json-512.png)
+*Table 1: Performance with strict JSON output enforcement and a 512-token limit.*
 
 **Key Findings:**
-*   **Qwen3-8B** saw a significant boost, reaching **77.88%** on BBH using the optimized prompt.
-*   The GA successfully identified synergistic combinations of instructions (e.g., combining "Expert Persona" with "Step-back Prompting") that humans might overlook.
+*   **Superior Constraint Adherence:** The GA evolved prompts that successfully forced models to output valid JSON while performing complex reasoning, significantly outperforming standard Zero-Shot CoT, which often breaks formatting rules.
+*   **Efficiency:** Even with a reduced token budget (512 vs. the standard 2048), the GA-optimized prompts maintained high accuracy, making them suitable for production environments where latency and cost are factors.
 
-### 2. Cross-Model Transferability
-We tested whether a prompt optimized for one model (e.g., Qwen) works well on another (e.g., Llama).
+### 2. Cross-Dataset Generalization
+To test if the GA simply "overfits" to a specific dataset, we took prompts optimized on **MMLU-Pro** and tested them on **BBH** (and vice versa).
 
-![Transferability Heatmap](results/transfer_heatmap.png)
-*Figure 2: Cross-Model Transferability Matrix. Rows represent the model used to optimize the prompt; Columns represent the model evaluated.*
+![Cross Dataset Results](results/cross-dataset.png)
+*Table 2: Generalization performance. "Difference" indicates the performance drop when applying a prompt optimized on one dataset to a completely different one.*
 
-*   **Green Cells:** High transferability. Prompts optimized on Qwen3-8B generalized exceptionally well to Phi-4 and Gemma-3.
-*   **Observation:** Larger or more capable models tend to generate more robust prompts that work universally.
+**Observation:**
+*   The system demonstrates **task-agnostic generalization**. For example, the prompt evolved for Qwen3-8B on MMLU-Pro lost only **0.02%** accuracy when applied to BBH.
+*   This suggests the GA is discovering fundamental reasoning instructions (e.g., "Step-back prompting" combined with "Persona adoption") that apply universally to logic tasks, rather than dataset-specific tricks.
+
+### 3. Cross-Model Transferability
+We analyzed the transferability of optimized prompts across different model architectures. The heatmap below displays the accuracy when a prompt optimized on a *Source Model* (rows) is evaluated on a *Target Model* (columns).
+
+![Cross Model Heatmap](results/cross-model.png)
+*Figure 2: Transferability Matrix. Green indicates high performance; Orange indicates lower performance.*
+
+**Insights:**
+*   **Strong-to-Weak Transfer:** Prompts optimized on capable models (like **Qwen3-8B**) generalize exceptionally well to smaller or different models (Phi-4-mini, Gemma-3).
+*   **Model-Specific Prompts:** Llama-3.1 generated prompts that were highly effective for itself but transferred poorly to others, indicating it found model-specific "hacks" rather than universal reasoning patterns.
 
 ## 💻 Usage
 
